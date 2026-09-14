@@ -218,6 +218,7 @@ public:
     ShowDesktopInterfaceV1::State showDesktopState() const;
 
     Q_INVOKABLE bool isLaunchpad(WLayerSurface *surface) const;
+    Q_INVOKABLE bool isQuickLaunchpad(WLayerSurface *surface) const;
     Q_INVOKABLE void setLaunchpadMapped(WOutput *output, bool mapped);
     Q_INVOKABLE void showDesktop(WOutput *output);
     Q_INVOKABLE void cancelShowDesktop(SurfaceWrapper *excludeSurface = nullptr);

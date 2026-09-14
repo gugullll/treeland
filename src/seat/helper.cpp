@@ -3384,6 +3384,17 @@ bool Helper::isLaunchpad(WLayerSurface *surface) const
     return scope == "dde-shell/launchpad";
 }
 
+bool Helper::isQuickLaunchpad(WLayerSurface *surface) const
+{
+    if (!surface) {
+        return false;
+    }
+
+    auto scope = QString(surface->handle()->scope);
+
+    return scope == "dde-shell/quick-launchpad";
+}
+
 void Helper::setLaunchpadMapped(WOutput *output, bool mapped)
 {
     Q_EMIT launchpadMappedChanged(output, mapped);
