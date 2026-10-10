@@ -132,6 +132,13 @@ OutputItem {
                         target: wallpaper
                         scale: 1.4
                     }
+                },
+                State {
+                    name: "NormalWithoutAnimation"
+                    PropertyChanges {
+                        target: wallpaper
+                        scale: 1
+                    }
                 }
             ]
 
@@ -170,6 +177,14 @@ OutputItem {
                         property: "scale"
                         duration: 0
                     }
+                },
+                Transition {
+                    from: "*"
+                    to: "NormalWithoutAnimation"
+                    PropertyAnimation {
+                        property: "scale"
+                        duration: 0
+                    }
                 }
             ]
 
@@ -199,7 +214,11 @@ OutputItem {
                     }
 
                     wallpaper.play = false
-                    wallpaper.state = showAnimation ? "ScaleTo1.2" : "ScaleWithoutAnimation"
+                    if (GreeterProxy.showShutdownView && !GreeterProxy.isLocked) {
+                        wallpaper.state = "NormalWithoutAnimation"
+                    } else {
+                        wallpaper.state = showAnimation ? "ScaleTo1.2" : "ScaleWithoutAnimation"
+                    }
                 }
             }
         }

@@ -3,6 +3,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import Treeland
 import LockScreen
 
@@ -29,12 +30,19 @@ FocusScope {
         id: background
 
         readonly property int duration: 1000
+        property real wallpaperBrightness: 0.0
+        property real wallpaperSaturation: 0.0
         anchors.fill: parent
         clip: true
         color: 'black'
-        opacity: 0.0
         transformOrigin: Item.Center
-        state: (GreeterProxy.isLocked || GreeterProxy.undecided || GreeterProxy.showShutdownView) ? "Show" : "Hide"
+        state: {
+            if (GreeterProxy.isLocked || GreeterProxy.undecided)
+                return "Show"
+            if (GreeterProxy.showShutdownView)
+                return "ShowWithoutScale"
+            return "Hide"
+        }
         states: [
             State {
                 name: "Show"
@@ -44,7 +52,26 @@ FocusScope {
                 }
                 PropertyChanges {
                     target: background
-                    opacity: 1
+                    wallpaperBrightness: -0.25
+                }
+                PropertyChanges {
+                    target: background
+                    wallpaperSaturation: 0.10
+                }
+            },
+            State {
+                name: "ShowWithoutScale"
+                PropertyChanges {
+                    target: background
+                    scale: 1
+                }
+                PropertyChanges {
+                    target: background
+                    wallpaperBrightness: -0.25
+                }
+                PropertyChanges {
+                    target: background
+                    wallpaperSaturation: 0.10
                 }
             },
             State {
@@ -55,7 +82,11 @@ FocusScope {
                 }
                 PropertyChanges {
                     target: background
-                    opacity: 0
+                    wallpaperBrightness: 0
+                }
+                PropertyChanges {
+                    target: background
+                   wallpaperSaturation: 0.0
                 }
             }
         ]
@@ -70,9 +101,33 @@ FocusScope {
                     easing.type: Easing.OutExpo
                 }
                 PropertyAnimation {
-                    property: "opacity"
+                    property: "wallpaperBrightness"
+                    duration: background.duration
+                    easing.type: Easing.InOutCubic
+                }
+               PropertyAnimation {
+                   property: "wallpaperSaturation"
+                    duration: background.duration
+                   easing.type: Easing.InOutCubic
+               }
+            },
+            Transition {
+                from: "*"
+                to: "ShowWithoutScale"
+                PropertyAnimation {
+                    property: "scale"
                     duration: background.duration
                     easing.type: Easing.OutExpo
+                }
+                PropertyAnimation {
+                    property: "wallpaperBrightness"
+                    duration: background.duration
+                    easing.type: Easing.InOutCubic
+                }
+                PropertyAnimation {
+                   property: "wallpaperSaturation"
+                   duration: background.duration
+                   easing.type: Easing.InOutCubic
                 }
             },
             Transition {
@@ -84,19 +139,24 @@ FocusScope {
                     easing.type: Easing.OutExpo
                 }
                 PropertyAnimation {
-                    property: "opacity"
+                    property: "wallpaperBrightness"
                     duration: background.duration
-                    easing.type: Easing.OutExpo
+                    easing.type: Easing.InOutCubic
                 }
+                PropertyAnimation {
+                    property: "wallpaperSaturation"
+                  duration: background.duration
+                   easing.type: Easing.InOutCubic
+               }
             }
         ]
         onStateChanged: {
-            if (state === "Show") {
-                Helper.startLockscreen(root.output, true);
-                wallpaper.play = true;
-            } else {
+            if (state === "Hide") {
                 wallpaper.play = false;
                 Helper.showDesktop(root.output)
+            } else {
+                Helper.startLockscreen(root.output, state === "Show");
+                wallpaper.play = true;
             }
         }
 
@@ -110,20 +170,16 @@ FocusScope {
             visible: false
         }
 
-        ShaderEffect {
+        MultiEffect {
             id: wallpaperEffect
 
             anchors.fill: parent
             clip: true
-	        visible: true
+            visible: true
 
-            property variant source: wallpaper
-            property real threshold: 0.80
-            property real maxLightness: 0.88
-            property real chromaStart: 0.02
-            property real chromaEnd: 0.08
-
-            fragmentShader: "qrc:/shaders/wallpaper_oklch_shoulder.frag.qsb"
+            source: wallpaper
+            brightness: background.wallpaperBrightness
+            saturation: background.wallpaperSaturation
         }
     }
 
