@@ -411,13 +411,6 @@ bool SeatSurfaceManager::shouldHandleShortcuts() const
     return m_seat == seats.first();
 }
 
-void SeatSurfaceManager::setMetaKeyPressed(bool pressed)
-{
-    if (m_metaKeyPressed == pressed)
-        return;
-    m_metaKeyPressed = pressed;
-}
-
 void SeatSurfaceManager::surfaceDestroyed(SurfaceWrapper *surface)
 {
     if (m_moveResizeState.surface == surface) {

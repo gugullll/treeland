@@ -372,6 +372,7 @@ private:
                              bool raise = true);
 
     bool beforeDisposeEvent(WSeat *seat, QWindow *window, QInputEvent *event) override;
+    bool isKeyboardShortcutsInhibited(WSeat *seat) const;
     bool afterHandleEvent(WSeat *seat, WSurface *watched, QObject *shellObject,
                          QObject *eventObject, QInputEvent *event) override;
     bool unacceptedEvent(WSeat *seat, QWindow *window, QInputEvent *event) override;

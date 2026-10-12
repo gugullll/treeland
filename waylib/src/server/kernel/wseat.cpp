@@ -236,7 +236,16 @@ public:
             // Send keyboard enter with current modifiers.
             // This ensures the newly focused client receives the current modifier state
             // (Num Lock, Caps Lock, etc.) as required by Wayland protocol.
-            wlr_seat_keyboard_notify_enter(handle(), surface, keycodes, numKeycodes, modifiers);
+            //
+            // Keys consumed by shortcut handling are dropped: the client never
+            // saw their press, so advertising them here would make it believe the
+            // key is held down while its release stays swallowed (stuck key).
+            // This mirrors KWin's `KeyboardInputRedirection::unfilteredKeys()`.
+            uint32_t visibleKeycodes[WLR_KEYBOARD_KEYS_CAP];
+            const size_t numVisibleKeycodes =
+                WSeat::unfilteredKeycodes(keycodes, numKeycodes, filteredKeys,
+                                          visibleKeycodes);
+            wlr_seat_keyboard_notify_enter(handle(), surface, visibleKeycodes, numVisibleKeycodes, modifiers);
         } else {
             // Grab-aware: the raw wlr_seat_keyboard_clear_focus() would
             // bypass an active keyboard grab (IME, popup, drag).
@@ -386,6 +395,12 @@ public:
     QPointer<QWindow> focusWindow;
     QPointer<QObject> pointerFocusEventObject;
     QPointer<WSurface> m_keyboardFocusSurface;
+    // Evdev keycodes whose press was consumed by shortcut handling and whose
+    // release must therefore be swallowed as well. Only non-modifier keys ever
+    // end up here: modifiers are mirrored to the client (their wl_keyboard.key
+    // is delivered and only the modifier mask changes) and are never filtered.
+    // See WSeat::addFilteredKey().
+    QSet<uint32_t> filteredKeys;
     QMetaObject::Connection onEventObjectDestroy;
     wlr_surface *oldPointerFocusSurface = nullptr;
 
@@ -1186,6 +1201,36 @@ void WSeat::clearKeyboardFocusSurface()
     d->doSetKeyboardFocus(nullptr);
 }
 
+void WSeat::addFilteredKey(uint32_t keycode)
+{
+    W_D(WSeat);
+    d->filteredKeys.insert(keycode);
+}
+
+void WSeat::removeFilteredKey(uint32_t keycode)
+{
+    W_D(WSeat);
+    d->filteredKeys.remove(keycode);
+}
+
+bool WSeat::isKeyFiltered(uint32_t keycode) const
+{
+    W_DC(WSeat);
+    return d->filteredKeys.contains(keycode);
+}
+
+size_t WSeat::unfilteredKeycodes(const uint32_t *keycodes, size_t numKeycodes,
+                                 const QSet<uint32_t> &filteredKeys, uint32_t *out)
+{
+    size_t numUnfiltered = 0;
+    for (size_t i = 0; i < numKeycodes; ++i) {
+        if (filteredKeys.contains(keycodes[i]))
+            continue;
+        out[numUnfiltered++] = keycodes[i];
+    }
+    return numUnfiltered;
+}
+
 void WSeat::setKeyboardFocusWindow(QWindow *window)
 {
     W_D(WSeat);
@@ -1678,6 +1723,8 @@ void WSeat::destroy(WServer *)
         i->setSeat(nullptr);
 
     d->deviceList.clear();
+
+    d->filteredKeys.clear();
 
     // Need not call the DCursor::detachInputDevice on destroy WSeat, so do
     // call the detachCursor at clear the deviceList after.

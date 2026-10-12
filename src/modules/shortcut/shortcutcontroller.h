@@ -67,6 +67,10 @@ public:
 
     void clear();
     bool dispatchKeyEvent(const QKeyEvent *event);
+
+    bool matchesShortcut(const QKeyEvent *event) const;
+    static bool isModifierKey(Qt::Key key);
+    static Qt::KeyboardModifiers modifierForKey(Qt::Key key);
     static QKeyCombination normalizeKeyCombination(QKeyCombination combination);
     static bool isValidShortcutCombination(QKeyCombination combination);
     Qt::KeyboardModifiers modifierForAction(ShortcutAction action) const;
@@ -77,6 +81,21 @@ Q_SIGNALS:
     void actionFinished(ShortcutAction action, const QString &name, bool isTriggered);
 
 private:
+    // Modifier-only shortcut state machine, mirroring KWin's
+    // GlobalShortcutsRegistry: a standalone modifier (e.g. the Win key) only
+    // fires on release, and any non-modifier press cancels the candidate.
+    enum class ModifierState {
+        Normal,
+        PressingModifierOnly,
+        ReleasingModifierOnly,
+    };
+    // Matches a normalized combined key and emits matching actions. Returns
+    // whether the combination matched a registered shortcut.
+    bool dispatchCombination(int combined, KeyFlags keyFlags);
+    bool dispatchCombinedEvent(const QKeyEvent *event);
+
+    ModifierState m_modifierState = ModifierState::Normal;
+    Qt::KeyboardModifiers m_heldModifiers = Qt::NoModifier;
 
     QMap<int, QMap<ShortcutAction, std::pair<QString, KeyFlags>>> m_keyMap;
     QMap<std::pair<uint, SwipeGesture::Direction>, QMap<ShortcutAction, QString>> m_gesturemap;

@@ -2703,22 +2703,6 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *targetWindow, QInputEvent 
     if (seat == m_primarySeat) {
         if (event->type() == QEvent::KeyPress) {
             auto kevent = static_cast<QKeyEvent *>(event);
-            switch (kevent->key()) {
-            case Qt::Key_Meta:
-            case Qt::Key_Super_L:
-            case Qt::Key_Super_R:
-                if (auto *seatContainer = m_rootSurfaceContainer->getSeatContainer(seat))
-                    seatContainer->setMetaKeyPressed(true);
-                break;
-            default:
-                if (auto *seatContainer = m_rootSurfaceContainer->getSeatContainer(seat))
-                    seatContainer->setMetaKeyPressed(false);
-                break;
-            }
-        }
-
-        if (event->type() == QEvent::KeyPress) {
-            auto kevent = static_cast<QKeyEvent *>(event);
 
 #ifndef QT_NO_DEBUG
             if (QKeySequence(kevent->keyCombination()) ==
@@ -2797,15 +2781,24 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *targetWindow, QInputEvent 
             m_rootSurfaceContainer->endMoveResizeForSeat(seat);
         }
     }
-
-    // Suppress compositor shortcuts when a keyboard shortcuts inhibitor is active
-    if (m_currentMode == CurrentMode::Normal) {
-        auto *focusSurface = seat->keyboardFocusSurface();
-        if (focusSurface
-            && m_keyboardShortcutsInhibitManagerV1->isInhibited(seat->handle(),
-                                                                focusSurface->handle()))
-            return false;
+    // Mirror of a shortcut-consumed key: its press was swallowed, so its release
+    // must be swallowed too, even if it arrives after the modifier (e.g. Ctrl
+    // released before K). A release-bound shortcut still gets its chance here,
+    // but only when the focused surface does not inhibit compositor shortcuts.
+    if (seat == m_primarySeat && !m_captureSelector
+        && m_currentMode != CurrentMode::LockScreen && event->type() == QEvent::KeyRelease) {
+        auto *kevent = static_cast<QKeyEvent *>(event);
+        const uint32_t evdevKeycode = kevent->nativeVirtualKey();
+        if (!kevent->isAutoRepeat() && seat->isKeyFiltered(evdevKeycode)) {
+            seat->removeFilteredKey(evdevKeycode);
+            if (!isKeyboardShortcutsInhibited(seat))
+                m_shortcutManager->controller()->dispatchKeyEvent(kevent);
+            return true;
+        }
     }
+    // Suppress compositor shortcuts when a keyboard shortcuts inhibitor is active
+    if (isKeyboardShortcutsInhibited(seat))
+        return false;
 
     // Capture mode: intercept key events before dispatchKeyEvent
     if (m_shortcutManager->isCaptureActive() && m_shortcutManager->tryHandleCaptureEvent(seat, event))
@@ -2814,24 +2807,37 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *targetWindow, QInputEvent 
     if (seat == m_primarySeat && !m_captureSelector && m_currentMode != CurrentMode::LockScreen
         && (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease)) {
         auto kevent = static_cast<QKeyEvent *>(event);
-        auto *seatContainer = m_rootSurfaceContainer->getSeatContainer(seat);
+        auto *controller = m_shortcutManager->controller();
+        const uint32_t evdevKeycode = kevent->nativeVirtualKey();
+        const bool isNonModifier = !ShortcutController::isModifierKey(static_cast<Qt::Key>(kevent->key()));
 
-        // Meta: consume press as modifier; suppress release when used in combo
-        if (kevent->key() == Qt::Key_Meta || kevent->key() == Qt::Key_Super_L || kevent->key() == Qt::Key_Super_R) {
-            if (kevent->type() == QEvent::KeyPress) {
-                return true;
-            }
-            if (kevent->type() == QEvent::KeyRelease && seatContainer && !seatContainer->metaKeyPressed()) {
-                return false;
-            }
+        // Record the consumed key *before* dispatching: handling a shortcut can
+        // synchronously switch keyboard focus and emit wl_keyboard.enter (e.g.
+        // Alt+Tab), and the key must already be excluded from that enter's key
+        // set. Modifiers never enter the filtered set, so only non-modifier
+        // presses are recorded.
+        if (!kevent->isAutoRepeat() && event->type() == QEvent::KeyPress && isNonModifier
+            && controller->matchesShortcut(kevent)) {
+            seat->addFilteredKey(evdevKeycode);
         }
 
-        if (m_shortcutManager->controller()->dispatchKeyEvent(kevent)) {
+        if (controller->dispatchKeyEvent(kevent))
             return true;
-        }
     }
 
     return false;
+}
+
+bool Helper::isKeyboardShortcutsInhibited(WSeat *seat) const
+{
+    if (m_currentMode != CurrentMode::Normal)
+        return false;
+    // Mirror KWin's waylandServer()->isKeyboardShortcutsInhibited(): the
+    // inhibitor applies only while the currently focused surface requested it.
+    auto *focusSurface = seat->keyboardFocusSurface();
+    return focusSurface
+        && m_keyboardShortcutsInhibitManagerV1->isInhibited(seat->handle(),
+                                                            focusSurface->handle());
 }
 
 bool Helper::afterHandleEvent([[maybe_unused]] WSeat *seat,

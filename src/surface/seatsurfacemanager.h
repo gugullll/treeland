@@ -58,8 +58,6 @@ public:
     void startEdgeTileDelay();
     void stopEdgeTileDelay();
     bool shouldHandleShortcuts() const;
-    bool metaKeyPressed() const { return m_metaKeyPressed; }
-    void setMetaKeyPressed(bool pressed);
     void surfaceDestroyed(SurfaceWrapper *surface);
 
     // Popup keyboard grab management
@@ -83,7 +81,6 @@ private:
     SurfaceWrapper *m_activatedSurface = nullptr;
     SurfaceWrapper *m_keyboardFocusSurface = nullptr;
     MoveResizeState m_moveResizeState;
-    bool m_metaKeyPressed = false;
 
     // Popup grab state
     bool m_hasPopupGrab = false;
