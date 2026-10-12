@@ -218,19 +218,67 @@ void ShortcutController::unregisterShortcut(const QString &name)
     }
 }
 
-bool ShortcutController::dispatchKeyEvent(const QKeyEvent *kevent)
+bool ShortcutController::matchesShortcut(const QKeyEvent *event) const
 {
-    auto combined = normalizeKeyCombination(kevent->keyCombination()).toCombined();
+    return m_keyMap.contains(normalizeKeyCombination(event->keyCombination()).toCombined());
+}
+
+bool ShortcutController::isModifierKey(Qt::Key key)
+{
+    switch (key) {
+    case Qt::Key_Shift:
+    case Qt::Key_Control:
+    case Qt::Key_Alt:
+    case Qt::Key_AltGr:
+    case Qt::Key_Meta:
+    case Qt::Key_Super_L:
+    case Qt::Key_Super_R:
+    case Qt::Key_CapsLock:
+    case Qt::Key_NumLock:
+    case Qt::Key_ScrollLock:
+        return true;
+    default:
+        return false;
+    }
+}
+
+Qt::KeyboardModifiers ShortcutController::modifierForKey(Qt::Key key)
+{
+    switch (key) {
+    case Qt::Key_Control:
+        return Qt::ControlModifier;
+    case Qt::Key_Shift:
+        return Qt::ShiftModifier;
+    case Qt::Key_Alt:
+    case Qt::Key_AltGr:
+        return Qt::AltModifier;
+    case Qt::Key_Meta:
+    case Qt::Key_Super_L:
+    case Qt::Key_Super_R:
+        return Qt::MetaModifier;
+    default:
+        return Qt::NoModifier;
+    }
+}
+
+bool ShortcutController::dispatchCombinedEvent(const QKeyEvent *kevent)
+{
     ShortcutController::KeyFlags keyFlags = (kevent->isAutoRepeat() ? ShortcutController::Repeat : ShortcutController::None)
         | (kevent->type() == QEvent::KeyPress ? ShortcutController::KeyPress : ShortcutController::None)
         | (kevent->type() == QEvent::KeyRelease ? ShortcutController::KeyRelease : ShortcutController::None);
 
+    return dispatchCombination(normalizeKeyCombination(kevent->keyCombination()).toCombined(),
+                               keyFlags);
+}
+
+bool ShortcutController::dispatchCombination(int combined, KeyFlags keyFlags)
+{
     bool matched = m_keyMap.contains(combined);
     if (matched) {
         qCInfo(lcTlShortcut).noquote()
-            << "shortcut match:" << QKeySequence(kevent->keyCombination()).toString(QKeySequence::PortableText)
-            << (kevent->type() == QEvent::KeyPress ? "press" : "release")
-            << (kevent->isAutoRepeat() ? "repeat" : "");
+            << "shortcut match:" << QKeySequence(QKeyCombination::fromCombined(combined)).toString(QKeySequence::PortableText)
+            << (keyFlags.testFlag(ShortcutController::KeyPress) ? "press" : "release")
+            << (keyFlags.testFlag(ShortcutController::Repeat) ? "repeat" : "");
     }
     if (!matched)
         return false;
@@ -248,6 +296,49 @@ bool ShortcutController::dispatchKeyEvent(const QKeyEvent *kevent)
         Q_EMIT actionTriggered(action, name, false, keyFlags);
     }
     return true;
+}
+
+bool ShortcutController::dispatchKeyEvent(const QKeyEvent *kevent)
+{
+    const Qt::Key key = static_cast<Qt::Key>(kevent->key());
+    const bool isRelease = kevent->type() == QEvent::KeyRelease;
+
+    if (isModifierKey(key)) {
+        // Modifiers are never consumed; the client always receives their
+        // wl_keyboard.key events and only the modifier mask changes.
+        if (!isRelease) {
+            m_modifierState = ModifierState::PressingModifierOnly;
+            m_heldModifiers = modifierForKey(key) | kevent->modifiers();
+            return false;
+        }
+
+        // A modifier released right after a lone modifier press is a
+        // modifier-only shortcut (e.g. the Win key). Dispatch the release event
+        // itself so the matching key sequence is exactly what the old
+        // release-based path produced, and swallow the outcome: the client must
+        // still see the modifier release.
+        if (m_modifierState == ModifierState::PressingModifierOnly) {
+            m_modifierState = ModifierState::ReleasingModifierOnly;
+            dispatchCombinedEvent(kevent);
+        }
+        m_heldModifiers &= ~modifierForKey(key);
+        if (m_modifierState == ModifierState::ReleasingModifierOnly
+            && m_heldModifiers == Qt::NoModifier) {
+            m_modifierState = ModifierState::Normal;
+        }
+        return false;
+    }
+
+    // Any non-modifier press cancels a pending modifier-only candidate and is
+    // dispatched through the regular key map.
+    m_modifierState = ModifierState::Normal;
+    return dispatchCombinedEvent(kevent);
+}
+
+void ShortcutController::cancelModifierOnly()
+{
+    m_modifierState = ModifierState::Normal;
+    m_heldModifiers = Qt::NoModifier;
 }
 
 Qt::KeyboardModifiers ShortcutController::modifierForAction(ShortcutAction action) const
