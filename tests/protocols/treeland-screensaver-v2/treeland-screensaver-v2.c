@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 extern void screensaver_query_inhibited(void *data);
 
@@ -119,6 +120,44 @@ static int server_inhibited_after_uninhibit(struct test_ctx *ctx)
     return inhibited == 0;
 }
 
+static int disconnect_releases_inhibit(struct test_ctx *ctx)
+{
+    struct client_connection connection;
+    if (!client_connect(&connection, ctx->socket_name))
+        return 0;
+
+    struct treeland_screensaver_v2 *screensaver = client_bind(
+        &connection, "treeland_screensaver_v2", &treeland_screensaver_v2_interface, 1);
+    if (!screensaver) {
+        client_disconnect(&connection);
+        return 0;
+    }
+
+    treeland_screensaver_v2_inhibit(screensaver, "protocol-test", "disconnect cleanup");
+    if (wl_display_roundtrip(connection.display) < 0) {
+        client_disconnect(&connection);
+        return 0;
+    }
+
+    int inhibited = 0;
+    if (!invoke_on_server_thread(screensaver_query_inhibited, &inhibited) || !inhibited) {
+        client_disconnect(&connection);
+        return 0;
+    }
+
+    client_disconnect(&connection);
+
+    // Closing a client connection is asynchronous on the server thread.
+    for (int attempt = 0; attempt < 500; ++attempt) {
+        if (!invoke_on_server_thread(screensaver_query_inhibited, &inhibited))
+            return 0;
+        if (!inhibited)
+            return 1;
+        usleep(1000);
+    }
+    return 0;
+}
+
 static int expect_protocol_error(struct test_ctx *ctx, struct wl_display *display,
                                  uint32_t expected_code)
 {
@@ -162,6 +201,7 @@ static const struct test_case cases[] = {
     { "server.inhibited_after_inhibit", server_inhibited_after_inhibit },
     { "uninhibit", uninhibit },
     { "server.inhibited_after_uninhibit", server_inhibited_after_uninhibit },
+    { "disconnect.releases_inhibit", disconnect_releases_inhibit },
     { "uninhibit_without_inhibit.error.not_yet_inhibited", uninhibit_without_inhibit },
     { "inhibit_twice.error.already_inhibited", inhibit_twice },
 };

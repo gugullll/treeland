@@ -22,6 +22,7 @@ protected:
     void inhibit(Resource *resource, const QString &application_name, const QString &reason_for_inhibit) override;
     void uninhibit(Resource *resource) override;
     void destroy(Resource *resource) override;
+    void destroy_resource(Resource *resource) override;
 };
 
 ScreensaverInterfaceV2Private::ScreensaverInterfaceV2Private(ScreensaverInterfaceV2 *_q)
@@ -37,13 +38,14 @@ wl_global *ScreensaverInterfaceV2Private::global() const
 
 void ScreensaverInterfaceV2Private::destroy(Resource *resource)
 {
-    // destroy is a destructor request; release any active inhibit silently
-    // (the protocol says disconnect auto-releases the inhibit). Do NOT call
-    // uninhibit() here, which would post NOT_YET_INHIBITED when the client
-    // already uninhibited before destroying the object.
+    wl_resource_destroy(resource->handle);
+}
+
+void ScreensaverInterfaceV2Private::destroy_resource(Resource *resource)
+{
+    // Also release inhibits when the client disconnects without a destroy request.
     if (inhibits.remove(resource->handle))
         WaylandServer::instance()->updateIdleInhibitor();
-    wl_resource_destroy(resource->handle);
 }
 
 void ScreensaverInterfaceV2Private::inhibit(Resource *resource, const QString &application_name, const QString &reason_for_inhibit)
