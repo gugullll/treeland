@@ -176,6 +176,13 @@ Item {
                     }
                 }
 
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    // Override the arrow cursor of the style's context-menu MouseArea.
+                    cursorShape: Qt.IBeamCursor
+                }
+
                 D.ActionButton {
                     id: capsIndicator
                     height: parent.height
