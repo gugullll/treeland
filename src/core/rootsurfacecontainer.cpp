@@ -391,9 +391,7 @@ bool RootSurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface,
                 if (adjustedGeo.topLeft() != newGeometry.topLeft()) {
                     newGeometry = adjustedGeo;
                     mrState.settingPositionFlag = true;
-                    QPointF alignedPos = surface->alignToPixelGrid(newGeometry.topLeft());
-                    newGeometry.moveTopLeft(alignedPos);
-                    surface->setPosition(alignedPos);
+                    surface->setPosition(newGeometry.topLeft());
                     mrState.settingPositionFlag = false;
                 }
                 return false;
