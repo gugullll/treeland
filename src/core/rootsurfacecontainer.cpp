@@ -315,21 +315,20 @@ void RootSurfaceContainer::removeBySubContainer(SurfaceContainer *sub, SurfaceWr
 
 bool RootSurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface,
                                                         QRectF &newGeometry,
-                                                        const QRectF &oldGeometry)
+                                                        [[maybe_unused]] const QRectF &oldGeometry)
 {
-    // WaylandServer function to adjust anchor-based position during resize
-    // When resizing from an edge (e.g., right edge), the opposite position remains fixed
+    // Keep the opposite edge at its position when the drag began.
     auto adjustForResize = [](QRectF &geometry,
-                              const QRectF &oldGeometry,
+                              const QRectF &startGeometry,
                               Qt::Edges edges) {
         if (edges & Qt::RightEdge)
-            geometry.moveLeft(oldGeometry.left());
+            geometry.moveLeft(startGeometry.left());
         if (edges & Qt::BottomEdge)
-            geometry.moveTop(oldGeometry.top());
+            geometry.moveTop(startGeometry.top());
         if (edges & Qt::LeftEdge)
-            geometry.moveRight(oldGeometry.right());
+            geometry.moveRight(startGeometry.right());
         if (edges & Qt::TopEdge)
-            geometry.moveBottom(oldGeometry.bottom());
+            geometry.moveBottom(startGeometry.bottom());
     };
 
     // Check all per-seat containers for move/resize state
@@ -344,16 +343,13 @@ bool RootSurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface,
             }
 
             if (edges != 0) {
-                // Adjust anchor-based position during resize
                 QRectF adjustedGeo = newGeometry;
-                adjustForResize(adjustedGeo, oldGeometry, edges);
+                adjustForResize(adjustedGeo, mrState.startGeometry, edges);
 
                 if (adjustedGeo.topLeft() != newGeometry.topLeft()) {
                     newGeometry = adjustedGeo;
                     mrState.settingPositionFlag = true;
-                    QPointF alignedPos = surface->alignToPixelGrid(newGeometry.topLeft());
-                    newGeometry.moveTopLeft(alignedPos);
-                    surface->setPosition(alignedPos);
+                    surface->setPosition(newGeometry.topLeft());
                     mrState.settingPositionFlag = false;
                 }
                 return false;
