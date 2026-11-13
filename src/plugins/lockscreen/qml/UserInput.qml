@@ -432,6 +432,11 @@ Item {
         function onCurrentUserNameChanged(name) {
             updateUser()
         }
+
+        function onDataChanged() {
+            const currentUser = UserModel.get(UserModel.currentUserName)
+            avatar.fallbackSource = currentUser.icon ?? ""
+        }
     }
 
     Component.onCompleted: {

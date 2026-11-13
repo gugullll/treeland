@@ -150,14 +150,12 @@ bool UserModel::addUser(UserPtr user)
         if (!existing) {
             existing = getUser(user->UID());
         }
-        if (existing) {
-            const int row = static_cast<int>(d->users.indexOf(existing));
+        if (existing)
             existing->merge(*user);
-            Q_EMIT dataChanged(index(row), index(row));
-        }
         return false;
     }
 
+    connect(user.get(), &User::userDataChanged, this, &UserModel::onUserDataChanged);
     beginResetModel();
     d->users.emplace_back(std::move(user));
     std::sort(d->users.begin(), d->users.end(), [](const UserPtr &u1, const UserPtr &u2) {
@@ -167,6 +165,19 @@ bool UserModel::addUser(UserPtr user)
 
     Q_EMIT countChanged();
     return true;
+}
+
+void UserModel::onUserDataChanged()
+{
+    const auto *user = qobject_cast<User *>(sender());
+    const auto it = std::find_if(d->users.cbegin(), d->users.cend(), [user](const UserPtr &entry) {
+        return entry.get() == user;
+    });
+    if (it == d->users.cend())
+        return;
+
+    const auto modelIndex = index(static_cast<int>(it - d->users.cbegin()));
+    Q_EMIT dataChanged(modelIndex, modelIndex);
 }
 
 void UserModel::updateUserLoginState(const QString &username, bool loggedIn)
@@ -410,11 +421,21 @@ bool UserModel::tryAddNssUser(const QString &userName)
     // pw_gecos is comma-separated ("Full Name,Room,Work,Home,Other"); use only the first field.
     QString fullName = QString::fromLocal8Bit(pw->pw_gecos).section(QLatin1Char(','), 0, 0);
 
+    // Copy the NSS fields before calling into the account service.
+    const auto uid = static_cast<uid_t>(pw->pw_uid);
+    const auto gid = static_cast<gid_t>(pw->pw_gid);
+    const auto homeDir = QString::fromLocal8Bit(pw->pw_dir);
+
+    // The account service can know about users that its cached list omits.
+    auto account = d->manager.findUserById(uid);
+    if (account && QString::fromUtf8(account.value()->userName()) == userName)
+        return addUser(std::make_unique<User>(std::move(account).value()));
+
     qCInfo(lcTlGreeter) << "Adding NSS/LDAP user to model:" << userName;
     return addUser(std::make_unique<User>(
         userName,
-        static_cast<uid_t>(pw->pw_uid),
-        static_cast<gid_t>(pw->pw_gid),
-        QString::fromLocal8Bit(pw->pw_dir),
+        uid,
+        gid,
+        homeDir,
         fullName));
 }

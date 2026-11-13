@@ -92,6 +92,7 @@ Q_SIGNALS:
     void userLoggedIn(const QString &username, const QString &sessionId);
 
 private Q_SLOTS:
+    void onUserDataChanged();
     void onUserAdded(quint64 uid);
     void onUserDeleted(quint64 uid);
 

@@ -55,6 +55,13 @@ User::User(AccountsUserPtr ptr)
         d->updateUserData();
         Q_EMIT userDataChanged();
     });
+    connect(d->inter.data(), &DAccountsUser::iconFileChanged, this, [this](const QUrl &icon) {
+        if (d->icon == icon)
+            return;
+
+        d->icon = icon;
+        Q_EMIT userDataChanged();
+    });
 
     d->updateUserData();
 }
