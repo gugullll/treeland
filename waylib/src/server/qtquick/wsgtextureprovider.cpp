@@ -57,6 +57,10 @@ public:
         if (ownsTexture && texture)
             wlr_texture_destroy(texture);
         texture = nullptr;
+
+        auto *oldBuffer = buffer;
+        buffer = nullptr;
+        wlr_buffer_unlock(oldBuffer);
     }
 
     void flushVulkanStageIfNeeded() {
@@ -126,6 +130,8 @@ void WSGTextureProvider::setBuffer(wlr_buffer *buffer)
         return;
     }
 
+    if (buffer)
+        wlr_buffer_lock(buffer);
     d->cleanTexture();
     d->buffer = buffer;
 
@@ -158,6 +164,8 @@ void WSGTextureProvider::setBuffer(wlr_buffer *buffer)
 void WSGTextureProvider::setTexture(wlr_texture *texture, wlr_buffer *srcBuffer)
 {
     W_D(WSGTextureProvider);
+    if (srcBuffer)
+        wlr_buffer_lock(srcBuffer);
     d->cleanTexture();
     d->texture = texture;
     d->buffer = srcBuffer;
