@@ -108,7 +108,7 @@ dtk_add_config_to_cpp(
 
 dtk_add_config_to_cpp(
     APP_CONFIG
-    "${PROJECT_SOURCE_DIR}/misc/dconfig/org.deepin.dde.treeland.app.json"
+    "${PROJECT_SOURCE_DIR}/misc/dconfig/org.deepin.dde.treeland.user.app.json"
     OUTPUT_FILE_NAME "appconfig.hpp"
     CLASS_NAME "AppConfig"
 )
@@ -152,6 +152,8 @@ qt_add_qml_module(libtreeland
         common/windowdecorations.h
         dconfig/dconfigmanager.cpp
         dconfig/dconfigmanager.h
+        dconfig/userconfigbackend.cpp
+        dconfig/userconfigbackend.h
         core/layersurfacecontainer.cpp
         core/layersurfacecontainer.h
         core/qmlengine.cpp

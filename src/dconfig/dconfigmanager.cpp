@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "dconfigmanager.h"
+#include "userconfigbackend.h"
 #include "core/waylandserver.h"
 #include "greeter/usermodel.h"
 
@@ -18,6 +19,7 @@
 #include <wseat.h>
 
 #include <DConfig>
+
 
 namespace {
 
@@ -37,12 +39,7 @@ QString configSubpath(const QString &name)
     return QStringLiteral("/") + name;
 }
 
-QString seatConfigSubpath(const QString &userName, const QString &seatName)
-{
-    return configSubpath(userName) + QStringLiteral("/") + seatName;
-}
-
-}
+} // namespace
 
 DConfigManager *DConfigManager::s_instance = nullptr;
 
@@ -110,19 +107,25 @@ TreelandConfig *DConfigManager::globalConfig() const
     return m_globalConfig;
 }
 
-AnimationConfig *DConfigManager::animationConfig(const QString &userName)
+AnimationConfig *DConfigManager::animationConfig(uint uid)
 {
-    if (userName.isEmpty())
-        return nullptr;
-
-    if (auto *config = m_animationConfigs.value(userName))
+    if (auto *config = m_animationConfigs.value(uid))
         return config;
 
-    auto *config = AnimationConfig::createByName(QStringLiteral("org.deepin.dde.treeland.animation"),
-                                                QStringLiteral("org.deepin.dde.treeland"),
-                                                configSubpath(userName),
-                                                this);
-    m_animationConfigs.insert(userName, config);
+    auto *backend =
+        new UserConfigBackend(uid, QStringLiteral("org.deepin.dde.treeland.animation"), QString());
+    auto *config =
+        AnimationConfig::createByName(backend,
+                                      QStringLiteral("org.deepin.dde.treeland.animation"),
+                                      QStringLiteral("org.deepin.dde.treeland"),
+                                      QString(),
+                                      this);
+    connect(config,
+            &AnimationConfig::configInitializeSucceed,
+            backend,
+            &UserConfigBackend::subscribe,
+            Qt::SingleShotConnection);
+    m_animationConfigs.insert(uid, config);
     return config;
 }
 
@@ -131,41 +134,54 @@ AnimationConfig *DConfigManager::initialAnimationConfig() const
     return m_initialAnimationConfig;
 }
 
-TreelandUserConfig *DConfigManager::userConfig(const QString &userName)
+TreelandUserConfig *DConfigManager::userConfig(uint uid)
 {
-    if (userName.isEmpty()) {
-        return nullptr;
-    }
-
-    if (auto *config = m_userConfigs.value(userName)) {
+    if (auto *config = m_userConfigs.value(uid)) {
         return config;
     }
 
-    auto *config = TreelandUserConfig::createByName(QStringLiteral("org.deepin.dde.treeland.user"),
+    auto *backend =
+        new UserConfigBackend(uid, QStringLiteral("org.deepin.dde.treeland.user"), QString());
+    auto *config = TreelandUserConfig::createByName(backend,
+                                                    QStringLiteral("org.deepin.dde.treeland.user"),
                                                     QStringLiteral("org.deepin.dde.treeland"),
-                                                    configSubpath(userName),
+                                                    QString(),
                                                     this);
-    m_userConfigs.insert(userName, config);
+    connect(config,
+            &TreelandUserConfig::configInitializeSucceed,
+            backend,
+            &UserConfigBackend::subscribe,
+            Qt::SingleShotConnection);
+    m_userConfigs.insert(uid, config);
     return config;
 }
 
-SeatUserDConfig *DConfigManager::userSeatConfig(const QString &userName, const QString &seatName)
+SeatUserDConfig *DConfigManager::userSeatConfig(uint uid, const QString &seatName)
 {
-    if (userName.isEmpty() || seatName.isEmpty()) {
+    if (seatName.isEmpty()) {
         return nullptr;
     }
 
-    const auto key = seatConfigSubpath(userName, seatName);
-    if (auto *config = m_seatUserConfigs.value(key)) {
+    auto &configs = m_seatUserConfigs[uid];
+    if (auto *config = configs.value(seatName)) {
         return config;
     }
 
-    auto *config = SeatUserDConfig::createByName(
-        QStringLiteral("org.deepin.dde.treeland.user.seat"),
-        QStringLiteral("org.deepin.dde.treeland"),
-        seatConfigSubpath(userName, seatName),
-        this);
-    m_seatUserConfigs.insert(key, config);
+    auto *backend = new UserConfigBackend(uid,
+                                          QStringLiteral("org.deepin.dde.treeland.user.seat"),
+                                          configSubpath(seatName));
+    auto *config =
+        SeatUserDConfig::createByName(backend,
+                                      QStringLiteral("org.deepin.dde.treeland.user.seat"),
+                                      QStringLiteral("org.deepin.dde.treeland"),
+                                      configSubpath(seatName),
+                                      this);
+    connect(config,
+            &SeatUserDConfig::configInitializeSucceed,
+            backend,
+            &UserConfigBackend::subscribe,
+            Qt::SingleShotConnection);
+    configs.insert(seatName, config);
     return config;
 }
 
@@ -187,33 +203,44 @@ OutputConfig *DConfigManager::outputConfig(const QString &outputName)
     return config;
 }
 
-AppConfig *DConfigManager::appConfig(const QString &appId)
+AppConfig *DConfigManager::appConfig(uint uid, const QString &appId)
 {
     if (appId.isEmpty()) {
         return nullptr;
     }
 
-    if (auto *config = m_appConfigs.value(appId)) {
+    auto &configs = m_appConfigs[uid];
+    if (auto *config = configs.value(appId)) {
         return config;
     }
 
-    auto *config = AppConfig::create(QStringLiteral("org.deepin.dde.treeland"),
-                                     configSubpath(appId),
-                                     this);
-    m_appConfigs.insert(appId, config);
+    auto *backend = new UserConfigBackend(uid,
+                                          QStringLiteral("org.deepin.dde.treeland.user.app"),
+                                          configSubpath(appId));
+    auto *config = AppConfig::createByName(backend,
+                                           QStringLiteral("org.deepin.dde.treeland.user.app"),
+                                           QStringLiteral("org.deepin.dde.treeland"),
+                                           configSubpath(appId),
+                                           this);
+    connect(config,
+            &AppConfig::configInitializeSucceed,
+            backend,
+            &UserConfigBackend::subscribe,
+            Qt::SingleShotConnection);
+    configs.insert(appId, config);
     return config;
 }
 
-bool DConfigManager::initializeUserConfigs(const QString &userName)
+bool DConfigManager::initializeUserConfigs(uint uid)
 {
-    m_initialAnimationConfig = animationConfig(userName);
-    m_initialUserConfig = userConfig(userName);
+    m_initialAnimationConfig = animationConfig(uid);
+    m_initialUserConfig = userConfig(uid);
     if (!m_initialUserConfig || !m_initialUserConfig->isInitializeSucceeded())
         return false;
 
     const auto seats = WaylandServer::instance()->seatManager()->seats();
     for (WSeat *seat : seats) {
-        const auto *seatConfig = userSeatConfig(userName, seat->name());
+        const auto *seatConfig = userSeatConfig(uid, seat->name());
         if (!seatConfig || !seatConfig->isInitializeSucceeded())
             return false;
     }
@@ -253,11 +280,16 @@ void DConfigManager::updateCurrentUser()
         return;
 
     const QString userName = m_server->userModel()->currentUserName();
-    auto *configManager = DConfigManager::instance();
-    auto *userConfig = configManager ? configManager->userConfig(userName) : m_server->config();
+    const auto user = m_server->userModel()->getUser(userName);
+    if (!user) {
+        qCWarning(lcTlConfig) << "Cannot select configuration for unknown user" << userName;
+        return;
+    }
+    const auto uid = static_cast<uint>(user->UID());
+    auto *userConfig = this->userConfig(uid);
     WSeat *defaultSeat = m_server->seatManager()->getSeat(DEFAULT_SEAT_NAME);
     const QString seatName = defaultSeat ? defaultSeat->name() : QStringLiteral(DEFAULT_SEAT_NAME);
-    auto *seatConfig = configManager ? configManager->userSeatConfig(userName, seatName) : nullptr;
+    auto *seatConfig = userSeatConfig(uid, seatName);
     if (!userConfig) {
         qCWarning(lcTlConfig) << "Cannot switch to user" << userName
                               << "because its DConfig object is unavailable";

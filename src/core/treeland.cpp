@@ -52,7 +52,6 @@
 #include <fcntl.h>
 #include <functional>
 #include <memory>
-#include <pwd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -91,12 +90,11 @@ public:
         connect(qmlEngine, &QQmlEngine::quit, q, &Treeland::quit, Qt::QueuedConnection);
 
 #ifndef DISABLE_DDM
-        auto userModel = qmlEngine->singletonInstance<UserModel *>("Treeland", "UserModel");
-        const QString initialUserName = userModel && !userModel->currentUserName().isEmpty()
-            ? userModel->currentUserName()
-            : QStringLiteral("dde");
+        auto *userModel = qmlEngine->singletonInstance<UserModel *>("Treeland", "UserModel");
+        const auto user = userModel ? userModel->currentUser() : nullptr;
+        const uint initialUid = user ? static_cast<uint>(user->UID()) : static_cast<uint>(getuid());
 #else
-        const QString initialUserName = QStringLiteral("dde");
+        const uint initialUid = static_cast<uint>(getuid());
 #endif
         auto initializeTreeland = [this, q, onInitialized = std::move(onInitialized)] {
             server = qmlEngine->singletonInstance<WaylandServer *>("Treeland", "WaylandServer");
@@ -119,23 +117,23 @@ public:
         };
 
         auto *configManager = DConfigManager::instance();
-        if (!configManager || configManager->initializeUserConfigs(initialUserName)) {
-            qCInfo(lcTlConfig) << "Initial user DConfig is ready for" << initialUserName;
+        if (!configManager || configManager->initializeUserConfigs(initialUid)) {
+            qCInfo(lcTlConfig) << "Initial user DConfig is ready for UID" << initialUid;
             initializeTreeland();
             return;
         }
 
-        qCInfo(lcTlConfig) << "Waiting for initial user DConfig initialization for"
-                           << initialUserName;
+        qCInfo(lcTlConfig) << "Waiting for initial user DConfig initialization for UID"
+                           << initialUid;
 
         auto *userConfig = configManager->initialUserConfig();
-        auto *seatConfig = configManager->userSeatConfig(initialUserName, QStringLiteral(DEFAULT_SEAT_NAME));
+        auto *seatConfig = configManager->userSeatConfig(initialUid, QStringLiteral(DEFAULT_SEAT_NAME));
         auto initialized = std::make_shared<bool>(false);
         auto initializeWhenReady = [initializeTreeland,
                                     userConfig,
                                     seatConfig,
                                     initialized,
-                                    initialUserName] {
+                                    initialUid] {
             if (*initialized) {
                 return;
             }
@@ -155,8 +153,8 @@ public:
                 qCWarning(lcTlConfig)
                     << "Initial user DConfig initialization failed; Treeland will continue with generated defaults.";
             } else {
-                qCInfo(lcTlConfig) << "Initial user DConfig initialization completed for"
-                                   << initialUserName;
+                qCInfo(lcTlConfig) << "Initial user DConfig initialization completed for UID"
+                                   << initialUid;
             }
             initializeTreeland();
         };
