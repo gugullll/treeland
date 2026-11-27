@@ -12,7 +12,7 @@
 #include "wallpapermanager.h"
 #include "workspace.h"
 #include "shellhandler.h"
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 #include "treelanduserconfig.hpp"
 
 #ifndef DISABLE_DDM

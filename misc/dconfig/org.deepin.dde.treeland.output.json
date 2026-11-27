@@ -5,7 +5,7 @@
         "brightness": {
             "value": 1.0e0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Brightness",
             "name[zh_CN]": "亮度",
             "description": "Brightness of this Output (in range 0.0 - 1.0)",
@@ -16,7 +16,7 @@
         "colorTemperature": {
             "value": 6600,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Color Temperature",
             "name[zh_CN]": "色温",
             "description": "Color temperature of this Output (in Kelvin)",
@@ -27,7 +27,7 @@
         "x": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "X Position",
             "name[zh_CN]": "X 坐标",
             "description": "Last applied x position of this output in the global compositor space.",
@@ -38,7 +38,7 @@
         "y": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Y Position",
             "name[zh_CN]": "Y 坐标",
             "description": "Last applied y position of this output in the global compositor space.",
@@ -49,7 +49,7 @@
         "width": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Width",
             "name[zh_CN]": "宽度",
             "description": "Last committed output mode width in pixels. 0 means no output mode has been saved.",
@@ -60,7 +60,7 @@
         "height": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Height",
             "name[zh_CN]": "高度",
             "description": "Last committed output mode height in pixels. 0 means no output mode has been saved.",
@@ -71,7 +71,7 @@
         "refresh": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Refresh Rate",
             "name[zh_CN]": "刷新率",
             "description": "Last committed output refresh rate in mHz. 0 means no output mode has been saved.",
@@ -82,7 +82,7 @@
         "transform": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Transform",
             "name[zh_CN]": "变换",
             "description": "Last committed wl_output_transform enum value for this output.",
@@ -93,7 +93,7 @@
         "scale": {
             "value": 1.0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Scale",
             "name[zh_CN]": "缩放",
             "description": "Last committed output scale. Values must be greater than 0. The default value means no output mode has been saved.",
@@ -104,7 +104,7 @@
         "adaptiveSyncEnabled": {
             "value": false,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Adaptive Sync Enabled",
             "name[zh_CN]": "启用自适应同步",
             "description": "Whether adaptive sync was enabled in the last committed output state.",
@@ -115,7 +115,7 @@
         "uuid": {
             "value": "",
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Output UUID",
             "name[zh_CN]": "显示输出设备 UUID",
             "description": "Persistent opaque uuid assigned to this display output device. It is generated on first insert and reused across sessions and reconnections. Empty means not yet assigned.",
@@ -126,7 +126,7 @@
         "groupName": {
             "value": "",
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Output Group Name",
             "name[zh_CN]": "输出分组名称",
             "description": "Name of the output group (copy mode) this output belongs to. Empty means the output belongs to no group.",
@@ -137,7 +137,7 @@
         "lastSetSourceTime": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Last Set Source Time",
             "name[zh_CN]": "上次设为源输出的时间",
             "description": "Wall-clock time in milliseconds since the epoch when this output was last explicitly designated as its group's source. 0 means it was never designated; the current source is resolved at runtime, not stored.",
@@ -148,7 +148,7 @@
         "joinTime": {
             "value": 0,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Group Join Time",
             "name[zh_CN]": "加入分组时间",
             "description": "Wall-clock time in milliseconds since the epoch when this output joined its current group. Updated only when joining a group; the mirror order of a group is the join order of its members. 0 means the output belongs to no group.",

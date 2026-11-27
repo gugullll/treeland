@@ -33,8 +33,11 @@ dde-dconfig set -a org.deepin.dde.treeland -r org.deepin.dde.treeland -k showOth
 # 读取当前用户 TreelandUserConfig 的键
 dde-dconfig get -a org.deepin.dde.treeland -u 1000 -r org.deepin.dde.treeland.user -k cursorSize
 
-# 读取按应用 AppConfig 的键
-dde-dconfig get -a org.deepin.dde.treeland -u 1000 -r org.deepin.dde.treeland.user.app -s /deepin-screen-recorder -k enablePrelaunchSplash
+# 读取每个用户的应用窗口尺寸
+dde-dconfig get -a org.deepin.dde.treeland -u 1000 -r org.deepin.dde.treeland.user.app -s /deepin-screen-recorder -k lastWindowWidth
+
+# 用自己的 UID 读取按应用共享的闪屏开关
+dde-dconfig get -a org.deepin.dde.treeland -r org.deepin.dde.treeland.app -s /deepin-screen-recorder -k enablePrelaunchSplash
 
 # 重置单个键；省略 -k 则重置该配置文件的所有缓存值
 dde-dconfig reset -a org.deepin.dde.treeland -r org.deepin.dde.treeland -k showOtherUserOption
@@ -56,8 +59,10 @@ dde-dconfig get -a org.deepin.dde.treeland -r org.deepin.dde.treeland -k showOth
 
 - 值由 `dde-dconfig` 解析；使用 JSON 风格取值（`true`、`false`、数字，必要时用带引号的字符串）。不要写 `ture` 这类拼写错误，即使某个本地工具版本看起来会强制接受。
 - `-r org.deepin.dde.treeland` 对应 `TreelandConfig`。
-- `-u <uid> -r org.deepin.dde.treeland.user` 对应指定用户的 `TreelandUserConfig`；动画配置同样使用 UID，subpath 为空。
+- `-u <uid> -r org.deepin.dde.treeland.user` 对应指定用户的 `TreelandUserConfig`。
+- `-u <uid> -r org.deepin.dde.treeland.user.animation` 对应指定用户的 `AnimationUserConfig`，subpath 为空。
 - `-u <uid> -r org.deepin.dde.treeland.user.seat -s /<seatName>` 对应 `SeatUserDConfig`。
 - `-r org.deepin.dde.treeland.output -s /<outputName>` 对应 `OutputConfig`。
-- `-u <uid> -r org.deepin.dde.treeland.user.app -s /<appId>` 对应 `WindowConfigStore` / `AppConfig`。
+- `-u <uid> -r org.deepin.dde.treeland.user.app -s /<appId>` 对应 `WindowConfigStore` / `AppUserConfig`。
+- `-r org.deepin.dde.treeland.app -s /<appId>` 对应共享的 `AppConfig`。
 - `watch` 输出发生变化的键名，不会直接输出新值；新值需用 `get` 查询。它验证配置服务的变更通知；生成类的 `*Changed`、用户切换重连与实际设置生效还需结合 Treeland 的运行效果检查。

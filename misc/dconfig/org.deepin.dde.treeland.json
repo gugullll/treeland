@@ -5,7 +5,7 @@
         "quickSwitchTimeout": {
             "value": 120,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Quick Switch Timeout (ms)",
             "name[zh_CN]": "快速切换超时（毫秒）",
             "description": "Timeout to distinguish a quick Alt+Tab toggle from the full task switcher",
@@ -16,7 +16,7 @@
         "forceSoftwareCursor": {
             "value": false,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Force Software Cursor",
             "name[zh_CN]": "强制软光标渲染",
             "description": "Force software cursor rendering",
@@ -27,7 +27,7 @@
         "enablePrelaunchSplash": {
             "value": true,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Enable Prelaunch Splash",
             "name[zh_CN]": "启用预启动闪屏",
             "description": "Enable showing prelaunch splash screens during application startup",
@@ -38,7 +38,7 @@
         "prelaunchSplashTimeoutMs": {
             "value": 5000,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Prelaunch Splash Timeout (ms)",
             "name[zh_CN]": "预启动闪屏超时（毫秒）",
             "description": "Timeout before destroying unmatched prelaunch splash wrappers",
@@ -49,7 +49,7 @@
         "remoteDebug": {
             "value": false,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Allow Debugging",
             "name[zh_CN]": "允许调试",
             "description": "Allow debugging tools to connect. Off by default: debugging hands out window contents and input injection, which a session-level compositor must not offer unasked. While this is on, treeland publishes its debug socket and serves the window tree remote source on demand, collecting everything per call (the only session-scoped resource, input-event capture, is armed only while a client polls for events). Release builds only let root connect. Turn it on with `treeland-debug debug on`. A debug build (CMAKE_BUILD_TYPE=Debug) always publishes its `-dev` socket, ignores this key, and allows the compositor's UID to connect without polkit (root retains privileged access).",
@@ -60,7 +60,7 @@
         "showOtherUserOption": {
             "value": true,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Show Other User Option",
             "name[zh_CN]": "显示其他用户选项",
             "description": "Show the 'Other...' entry in the login user list to allow logging in as an unlisted (e.g. LDAP/NSS) user",
@@ -71,7 +71,7 @@
         "primaryOutputId": {
             "value": "",
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Primary Output ID",
             "name[zh_CN]": "主屏幕 ID",
             "description": "Output id recorded as the primary output. Empty means no primary output has been saved.",
@@ -82,7 +82,7 @@
         "keyboardNumLock": {
             "value": true,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Keyboard Num Lock",
             "name[zh_CN]": "键盘数字锁定",
             "description": "Whether the Num Lock state is enabled by default on keyboards that have a numeric keypad. When enabled, the numeric keypad inputs numbers.",
@@ -93,7 +93,7 @@
         "singleOutputId": {
             "value": "",
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Single Output ID",
             "name[zh_CN]": "单屏显示输出 ID",
             "description": "Output ID used for single-output display. Empty means multiple outputs may be enabled. This selection is independent of copy and extension mode.",
@@ -104,7 +104,7 @@
         "outputGroups": {
             "value": "",
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Output Groups",
             "name[zh_CN]": "输出分组列表",
             "description": "Semicolon-separated list of persisted output group names. Group membership is stored on each output's own configuration.",
@@ -115,7 +115,7 @@
         "prelaunchSplashMaxMismatchCount": {
             "value": 4,
             "serial": 0,
-            "flags": [],
+            "flags": ["global"],
             "name": "Prelaunch Splash Max Mismatch Count",
             "name[zh_CN]": "预启动闪屏最大不匹配次数",
             "description": "Maximum consecutive splash match failures before disabling splash for an app. 0 means never auto-disable.",

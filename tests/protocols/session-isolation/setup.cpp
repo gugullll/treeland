@@ -14,7 +14,7 @@
 #include "session/sessionscene.h"
 #include "modules/prelaunch-splash/prelaunchsplash.h"
 #include "dconfig/dconfigmanager.h"
-#include "appconfig.hpp"
+#include "appuserconfig.hpp"
 #include "session/sessionseatmanager.h"
 #include "session/sessioninputchannel.h"
 #include "input/compositorinputfilter.h"
@@ -52,7 +52,7 @@ int previewRequests = 0;
 int foreignPreviewSurfaces = 0;
 QPointer<WSocket> backgroundSocket;
 
-bool hasStoredSize(AppConfig *config, const QSize &expected)
+bool hasStoredSize(AppUserConfig *config, const QSize &expected)
 {
     auto *dconfig = config->config();
     if (!dconfig)
@@ -100,7 +100,7 @@ void protocol_test_setup(WaylandServer *server)
     if (!sessionB || sessionA == sessionB)
         return;
     for (auto *owner : {sessionA.get(), sessionB.get()})
-        DConfigManager::instance()->appConfig(owner->uid(), QStringLiteral("org.deepin.session-launch-test"));
+        DConfigManager::instance()->appUserConfig(owner->uid(), QStringLiteral("org.deepin.session-launch-test"));
     // Keep the background test connection dispatchable. Visibility/authorization
     // still use the real Session identity, independently of socket suspension.
     sessionB->socket()->setEnabled(true);
@@ -123,7 +123,7 @@ extern "C" bool protocol_test_ready(WaylandServer *server)
     if (server->rootSurfaceContainer()->outputs().size() != 3)
         return false;
     for (auto *owner : {sessionA.get(), sessionB.get()}) {
-        auto *launchConfig = DConfigManager::instance()->appConfig(
+        auto *launchConfig = DConfigManager::instance()->appUserConfig(
             owner->uid(), QStringLiteral("org.deepin.session-launch-test"));
         if (!configurationReady(launchConfig))
             return false;
@@ -137,8 +137,8 @@ extern "C" bool protocol_test_ready(WaylandServer *server)
     }
     auto *manager = DConfigManager::instance();
     const auto appId = QStringLiteral("org.deepin.session-launch-test");
-    auto *aConfig = manager->appConfig(sessionA->uid(), appId);
-    auto *bConfig = manager->appConfig(sessionB->uid(), appId);
+    auto *aConfig = manager->appUserConfig(sessionA->uid(), appId);
+    auto *bConfig = manager->appUserConfig(sessionB->uid(), appId);
     static bool sizesStored = false;
     if (!sizesStored) {
         sizesStored = hasStoredSize(aConfig, QSize(720, 520))

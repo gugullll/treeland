@@ -61,7 +61,7 @@
 #include "surface/surfacewrapper.h"
 #include "treelandconfig.hpp"
 #include "treelanduserconfig.hpp"
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 #include "utils/fpsdisplaymanager.h"
 #include "utils/graphicsplatform.h"
 #include "wallpaper/wallpapermanager.h"
@@ -236,12 +236,12 @@ WaylandServer *WaylandServer::instance()
     return m_instance;
 }
 
-AnimationConfig *WaylandServer::animationConfig() const
+AnimationUserConfig *WaylandServer::animationConfig() const
 {
     return m_animationConfig;
 }
 
-void WaylandServer::setAnimationConfig(AnimationConfig *config)
+void WaylandServer::setAnimationConfig(AnimationUserConfig *config)
 {
     if (m_animationConfig == config)
         return;
@@ -250,9 +250,9 @@ void WaylandServer::setAnimationConfig(AnimationConfig *config)
         disconnect(m_animationConfig, nullptr, this, nullptr);
     m_animationConfig = config;
     if (config) {
-        connect(config, &AnimationConfig::configInitializeSucceed,
+        connect(config, &AnimationUserConfig::configInitializeSucceed,
                 this, &WaylandServer::animationConfigChanged);
-        connect(config, &AnimationConfig::configInitializeFailed,
+        connect(config, &AnimationUserConfig::configInitializeFailed,
                 this, &WaylandServer::animationConfigChanged);
     }
     Q_EMIT animationConfigChanged();

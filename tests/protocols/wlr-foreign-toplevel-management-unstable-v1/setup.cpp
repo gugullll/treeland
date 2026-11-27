@@ -13,7 +13,7 @@
 #include <wbackend.h>
 #include <wforeigntoplevelv1.h>
 
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 
 namespace {
 SurfaceWrapper *g_wrapper = nullptr;

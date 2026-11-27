@@ -9,6 +9,7 @@
 #include <functional>
 
 class AppConfig;
+class AppUserConfig;
 
 // Window configuration persistence backed by dconfig
 class WindowConfigStore : public QObject
@@ -33,6 +34,7 @@ public:
 
 private:
     AppConfig *configForApp(const QString &appId) const;
+    AppUserConfig *userConfigForApp(const QString &appId) const;
 
     const uint m_uid;
 };

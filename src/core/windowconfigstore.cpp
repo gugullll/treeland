@@ -5,10 +5,14 @@
 
 #include "dconfig/dconfigmanager.h"
 #include "appconfig.hpp"
+#include "appuserconfig.hpp"
 #include "treelandconfig.hpp"
 #include "common/treelandlogging.h"
 
 #include <QPointer>
+
+#include <memory>
+#include <utility>
 
 WindowConfigStore::WindowConfigStore(uint uid, QObject *parent)
     : QObject(parent)
@@ -18,13 +22,20 @@ WindowConfigStore::WindowConfigStore(uint uid, QObject *parent)
 
 AppConfig *WindowConfigStore::configForApp(const QString &appId) const
 {
+    auto *configManager = DConfigManager::instance();
+    Q_ASSERT(configManager);
+    return configManager->appConfig(appId);
+}
+
+AppUserConfig *WindowConfigStore::userConfigForApp(const QString &appId) const
+{
     if (appId.isEmpty()) {
         return nullptr;
     }
 
     auto *configManager = DConfigManager::instance();
     Q_ASSERT(configManager);
-    return configManager->appConfig(m_uid, appId);
+    return configManager->appUserConfig(m_uid, appId);
 }
 
 void WindowConfigStore::saveLastSize(const QString &appId, const QSize &size)
@@ -35,7 +46,7 @@ void WindowConfigStore::saveLastSize(const QString &appId, const QSize &size)
         return;
     }
 
-    auto *config = configForApp(appId);
+    auto *config = userConfigForApp(appId);
     if (!config) {
         qCWarning(lcTlCore) << "WindowConfigStore: saveLastSize no config for" << appId;
         return;
@@ -71,15 +82,36 @@ void WindowConfigStore::withSplashConfigFor(const QString &appId,
             skipCallback();
             return;
         }
+        auto *userConfig = userConfigForApp(appId);
+        if (!userConfig || userConfig->isInitializeFailed()) {
+            skipCallback();
+            return;
+        }
+#if APPUSERCONFIG_DCONFIG_FILE_VERSION_MINOR > 0
+        if (!userConfig->isInitializeSucceeded()) {
+#else
+        if (!userConfig->isInitializeSucceed()) {
+#endif
+            auto *ctx = context ? context : const_cast<WindowConfigStore *>(this);
+            const QPointer<WindowConfigStore> store(const_cast<WindowConfigStore *>(this));
+            connect(userConfig, &AppUserConfig::configInitializeSucceed, ctx,
+                    [store, appId, ctx, callback, skipCallback] {
+                        if (store)
+                            store->withSplashConfigFor(appId, ctx, callback, skipCallback);
+                    }, Qt::SingleShotConnection);
+            connect(userConfig, &AppUserConfig::configInitializeFailed, ctx,
+                    skipCallback, Qt::SingleShotConnection);
+            return;
+        }
         qCDebug(lcTlCore) << "WindowConfigStore: configInitializeSucceeded for" << appId
-                              << config->lastWindowWidth() << config->lastWindowHeight();
-        const QSize size(static_cast<int>(config->lastWindowWidth()),
-                         static_cast<int>(config->lastWindowHeight()));
+                              << userConfig->lastWindowWidth() << userConfig->lastWindowHeight();
+        const QSize size(static_cast<int>(userConfig->lastWindowWidth()),
+                         static_cast<int>(userConfig->lastWindowHeight()));
         const QSize validatedSize = size.isValid() ? size : QSize();
         callback(validatedSize,
-                 config->splashDarkPalette(),
-                 config->splashLightPalette(),
-                 config->splashThemeType());
+                 userConfig->splashDarkPalette(),
+                 userConfig->splashLightPalette(),
+                 userConfig->splashThemeType());
         return;
     }
 
@@ -91,11 +123,12 @@ void WindowConfigStore::withSplashConfigFor(const QString &appId,
 
     auto *ctx = context ? context : const_cast<WindowConfigStore *>(this);
     const QPointer<AppConfig> configGuard(config);
+    const QPointer<WindowConfigStore> store(const_cast<WindowConfigStore *>(this));
     connect(
         config,
         &AppConfig::configInitializeSucceed,
         ctx,
-        [appId, callback, skipCallback, configGuard](DTK_CORE_NAMESPACE::DConfig *) {
+        [appId, ctx, callback, skipCallback, configGuard, store](DTK_CORE_NAMESPACE::DConfig *) {
             if (!configGuard) {
                 qCWarning(lcTlCore)
                     << "WindowConfigStore: configInitializeSucceed but config deleted for" << appId;
@@ -108,16 +141,8 @@ void WindowConfigStore::withSplashConfigFor(const QString &appId,
                 return;
             }
 
-            qCDebug(lcTlCore) << "WindowConfigStore: configInitializeSucceed for" << appId
-                                  << configGuard->lastWindowWidth()
-                                  << configGuard->lastWindowHeight();
-            const QSize size(static_cast<int>(configGuard->lastWindowWidth()),
-                             static_cast<int>(configGuard->lastWindowHeight()));
-            const QSize validatedSize = size.isValid() ? size : QSize();
-            callback(validatedSize,
-                     configGuard->splashDarkPalette(),
-                     configGuard->splashLightPalette(),
-                     configGuard->splashThemeType());
+            if (store)
+                store->withSplashConfigFor(appId, ctx, callback, skipCallback);
         },
         Qt::SingleShotConnection);
     connect(

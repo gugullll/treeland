@@ -8,7 +8,7 @@
 #include "core/waylandserver.h"
 #include "surface/surfacewrapper.h"
 
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 
 #include <wbackend.h>
 

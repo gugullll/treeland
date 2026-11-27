@@ -10,8 +10,9 @@
 #include <DConfig>
 
 class WaylandServer;
-class AnimationConfig;
+class AnimationUserConfig;
 class AppConfig;
+class AppUserConfig;
 class OutputConfig;
 class SeatUserDConfig;
 class TreelandConfig;
@@ -39,12 +40,13 @@ public:
     bool isInitializeFailed() const;
 
     TreelandConfig *globalConfig() const;
-    AnimationConfig *animationConfig(uint uid);
-    AnimationConfig *initialAnimationConfig() const;
+    AnimationUserConfig *animationConfig(uint uid);
+    AnimationUserConfig *initialAnimationConfig() const;
     TreelandUserConfig *userConfig(uint uid);
     SeatUserDConfig *userSeatConfig(uint uid, const QString &seatName);
     OutputConfig *outputConfig(const QString &outputName);
-    AppConfig *appConfig(uint uid, const QString &appId);
+    AppConfig *appConfig(const QString &appId);
+    AppUserConfig *appUserConfig(uint uid, const QString &appId);
 
     // Creates and caches the initial user's configs. Returns true only when both
     // configs have already finished successfully; callers should listen for
@@ -71,12 +73,13 @@ private:
     static DConfigManager *s_instance;
 
     TreelandConfig *m_globalConfig = nullptr;
-    QHash<uint, AnimationConfig *> m_animationConfigs;
-    AnimationConfig *m_initialAnimationConfig = nullptr;
+    QHash<uint, AnimationUserConfig *> m_animationConfigs;
+    AnimationUserConfig *m_initialAnimationConfig = nullptr;
     QHash<uint, TreelandUserConfig *> m_userConfigs;
     QHash<uint, QHash<QString, SeatUserDConfig *>> m_seatUserConfigs;
     QHash<QString, OutputConfig *> m_outputConfigs;
-    QHash<uint, QHash<QString, AppConfig *>> m_appConfigs;
+    QHash<QString, AppConfig *> m_appConfigs;
+    QHash<uint, QHash<QString, AppUserConfig *>> m_appUserConfigs;
     TreelandUserConfig *m_initialUserConfig = nullptr;
 
     WaylandServer *m_server = nullptr;

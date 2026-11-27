@@ -13,7 +13,7 @@
 #include "core/waylandserver.h"
 #include "surface/surfacewindowtransition.h"
 #include "treelanduserconfig.hpp"
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 #include "workspace/workspace.h"
 #include "wtoplevelsurface.h"
 #include "wxdgtoplevelsurface.h"

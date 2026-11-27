@@ -86,10 +86,10 @@ dtk_add_config_to_cpp(
 )
 
 dtk_add_config_to_cpp(
-    ANIMATION_CONFIG
-    "${PROJECT_SOURCE_DIR}/misc/dconfig/org.deepin.dde.treeland.animation.json"
-    OUTPUT_FILE_NAME "animationconfig.hpp"
-    CLASS_NAME "AnimationConfig"
+    ANIMATION_USER_CONFIG
+    "${PROJECT_SOURCE_DIR}/misc/dconfig/org.deepin.dde.treeland.user.animation.json"
+    OUTPUT_FILE_NAME "animationuserconfig.hpp"
+    CLASS_NAME "AnimationUserConfig"
 )
 
 dtk_add_config_to_cpp(
@@ -107,8 +107,15 @@ dtk_add_config_to_cpp(
 )
 
 dtk_add_config_to_cpp(
-    APP_CONFIG
+    APP_USER_CONFIG
     "${PROJECT_SOURCE_DIR}/misc/dconfig/org.deepin.dde.treeland.user.app.json"
+    OUTPUT_FILE_NAME "appuserconfig.hpp"
+    CLASS_NAME "AppUserConfig"
+)
+
+dtk_add_config_to_cpp(
+    APP_CONFIG
+    "${PROJECT_SOURCE_DIR}/misc/dconfig/org.deepin.dde.treeland.app.json"
     OUTPUT_FILE_NAME "appconfig.hpp"
     CLASS_NAME "AppConfig"
 )
@@ -139,9 +146,10 @@ qt_add_qml_module(libtreeland
         ${DBUS_INTERFACE}
         ${TREELAND_CONFIG}
         ${TREELAND_USER_CONFIG}
-        ${ANIMATION_CONFIG}
+        ${ANIMATION_USER_CONFIG}
         ${OUTPUT_CONFIG}
         ${APP_CONFIG}
+        ${APP_USER_CONFIG}
         ${SEAT_USER_CONFIG}
         capture/capturemanager.cpp
         capture/capturemanager.h

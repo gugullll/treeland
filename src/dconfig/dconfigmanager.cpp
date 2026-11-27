@@ -6,8 +6,9 @@
 #include "core/waylandserver.h"
 #include "greeter/usermodel.h"
 
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 #include "appconfig.hpp"
+#include "appuserconfig.hpp"
 #include "outputconfig.hpp"
 #include "seatuserconfig.hpp"
 #include "treelandconfig.hpp"
@@ -19,7 +20,6 @@
 #include <wseat.h>
 
 #include <DConfig>
-
 
 namespace {
 
@@ -113,18 +113,18 @@ TreelandConfig *DConfigManager::globalConfig() const
     return m_globalConfig;
 }
 
-AnimationConfig *DConfigManager::animationConfig(uint uid)
+AnimationUserConfig *DConfigManager::animationConfig(uint uid)
 {
     if (auto *config = m_animationConfigs.value(uid))
         return config;
 
-    auto *config = createUserConfig<AnimationConfig>(
-        uid, QStringLiteral("org.deepin.dde.treeland.animation"), QString(), this);
+    auto *config = createUserConfig<AnimationUserConfig>(
+        uid, QStringLiteral("org.deepin.dde.treeland.user.animation"), QString(), this);
     m_animationConfigs.insert(uid, config);
     return config;
 }
 
-AnimationConfig *DConfigManager::initialAnimationConfig() const
+AnimationUserConfig *DConfigManager::initialAnimationConfig() const
 {
     return m_initialAnimationConfig;
 }
@@ -176,20 +176,33 @@ OutputConfig *DConfigManager::outputConfig(const QString &outputName)
     return config;
 }
 
-AppConfig *DConfigManager::appConfig(uint uid, const QString &appId)
+AppUserConfig *DConfigManager::appUserConfig(uint uid, const QString &appId)
 {
     if (appId.isEmpty()) {
         return nullptr;
     }
 
-    auto &configs = m_appConfigs[uid];
+    auto &configs = m_appUserConfigs[uid];
     if (auto *config = configs.value(appId)) {
         return config;
     }
 
-    auto *config = createUserConfig<AppConfig>(
+    auto *config = createUserConfig<AppUserConfig>(
         uid, QStringLiteral("org.deepin.dde.treeland.user.app"), configSubpath(appId), this);
     configs.insert(appId, config);
+    return config;
+}
+
+AppConfig *DConfigManager::appConfig(const QString &appId)
+{
+    if (appId.isEmpty())
+        return nullptr;
+    if (auto *config = m_appConfigs.value(appId))
+        return config;
+
+    auto *config = AppConfig::create(QStringLiteral("org.deepin.dde.treeland"),
+                                     configSubpath(appId), this);
+    m_appConfigs.insert(appId, config);
     return config;
 }
 

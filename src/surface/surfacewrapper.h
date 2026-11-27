@@ -604,7 +604,7 @@ private:
     Q_SLOT void onShowDesktopAnimationFinished();
 
     // Per-effect animation switches. Each animated effect reads its own
-    // AnimationConfig key so products can combine them freely.
+    // AnimationUserConfig key so products can combine them freely.
     bool windowAnimationEnabled(uint direction) const;
     bool geometryAnimationEnabled(State state) const;
     void updateHasActiveCapability(ActiveControlState state, bool value);

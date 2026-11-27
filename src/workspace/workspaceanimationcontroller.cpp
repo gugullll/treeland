@@ -7,7 +7,7 @@
 #include <cmath>
 #include "core/waylandserver.h"
 #include "treelanduserconfig.hpp"
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 
 WorkspaceAnimationController::WorkspaceAnimationController(QObject *parent)
     : QObject{ parent }

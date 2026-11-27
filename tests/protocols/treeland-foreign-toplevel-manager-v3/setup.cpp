@@ -12,7 +12,7 @@
 #include <wbackend.h>
 #include <woutputrenderwindow.h>
 
-#include "animationconfig.hpp"
+#include "animationuserconfig.hpp"
 
 #include <cstring>
 
